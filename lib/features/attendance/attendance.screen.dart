@@ -1,9 +1,13 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qrca_frontend/core/app_colors.dart';
+import 'package:qrca_frontend/features/auth/login.screen.dart';
 import 'package:qrca_frontend/widgets/toast.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({super.key});
@@ -14,6 +18,7 @@ class AttendanceScreen extends StatefulWidget {
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
   String _scanBarcode = '';
+  bool loading = false;
 
   Future<void> scanQR() async {
     String barcodeScanRes;
@@ -145,7 +150,56 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                     color: AppColors().mainRed,
                     borderRadius: BorderRadius.circular(5.0)),
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text(
+                              'Confirm Log out',
+                              style: TextStyle(fontWeight: FontWeight.w600),
+                            ),
+                            content: loading
+                                ? const SpinKitDualRing(
+                                    color: Colors.blue,
+                                    size: 30.0,
+                                  )
+                                : const Text(
+                                    'Are you sure you want to log out?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context)
+                                      .pop(); // Close the alert dialog
+                                },
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  SharedPreferences pref =
+                                      await SharedPreferences.getInstance();
+                                  setState(() {
+                                    loading = true;
+                                  });
+                                  pref.clear();
+
+                                  // ignore: use_build_context_synchronously
+                                  Navigator.of(context, rootNavigator: true)
+                                      .pushAndRemoveUntil(
+                                          CupertinoPageRoute(
+                                              builder: (context) =>
+                                                  const LoginScreen()),
+                                          (route) => false);
+                                },
+                                child: const Text(
+                                  'Log out',
+                                  style: TextStyle(color: Colors.red),
+                                ),
+                              ),
+                            ],
+                          );
+                        });
+                  },
                   child: const Text(
                     'Log out',
                     style: TextStyle(
