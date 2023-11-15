@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:qrca_frontend/config/api.dart';
 import 'package:qrca_frontend/features/auth/clerk.model.dart';
 import 'package:http/http.dart' as http;
@@ -19,7 +18,6 @@ class AuthController {
     Map jsonRes = jsonDecode(response.body) as Map<String, dynamic>;
 
     if (response.statusCode == 200) {
-      print(jsonRes);
       return {"success": true, "data": jsonRes};
     } else {
       return {"success": false, "data": jsonRes};

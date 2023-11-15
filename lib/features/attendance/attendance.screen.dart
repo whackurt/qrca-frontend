@@ -5,6 +5,9 @@ import 'package:flutter_barcode_scanner/flutter_barcode_scanner.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qrca_frontend/core/app_colors.dart';
+import 'package:qrca_frontend/features/attendance/attendance.controller.dart';
+import 'package:qrca_frontend/features/attendance/models/attendance.model.dart';
+import 'package:qrca_frontend/features/attendance/personnel.controller.dart';
 import 'package:qrca_frontend/features/auth/login.screen.dart';
 import 'package:qrca_frontend/widgets/toast.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,8 +20,14 @@ class AttendanceScreen extends StatefulWidget {
 }
 
 class _AttendanceScreenState extends State<AttendanceScreen> {
+  final AttendanceController attendanceController = AttendanceController();
+  final PersonnelController personnelController = PersonnelController();
+
   String _scanBarcode = '';
   bool loading = false;
+
+  Map data = {};
+  Map personnelData = {};
 
   Future<void> scanQR() async {
     String barcodeScanRes;
@@ -26,12 +35,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     try {
       barcodeScanRes = await FlutterBarcodeScanner.scanBarcode(
           '#ff6666', 'Cancel', true, ScanMode.QR);
+
       // ignore: avoid_print
       print(barcodeScanRes);
-
-      // ignore: use_build_context_synchronously
-      Toast().showSuccessToast(
-          context: context, message: 'Attendance recorded successfully.');
     } on PlatformException {
       barcodeScanRes = 'Failed to get platform version.';
       Toast().showErrorToast(
@@ -42,6 +48,34 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     setState(() {
       _scanBarcode = barcodeScanRes;
+    });
+
+    await attendanceController
+        .createAttendance(Attendance(qrCode: _scanBarcode))
+        .then((res) {
+      if (res['success']) {
+        setState(() {
+          data = res['data'];
+        });
+        Toast().showSuccessToast(
+            context: context, message: 'Attendance recorded successfully.');
+      } else {
+        Toast().showErrorToast(
+            context: context, message: 'Failed to record attendance.');
+      }
+    });
+
+    await personnelController
+        .getPersonnelById(id: data['personnel'])
+        .then((res) {
+      if (res['success']) {
+        setState(() {
+          personnelData = res['data'];
+        });
+      } else {
+        Toast().showErrorToast(
+            context: context, message: 'Failed to fetch personnel data.');
+      }
     });
   }
 
@@ -55,12 +89,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         centerTitle: true,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(25.0),
+        padding: const EdgeInsets.symmetric(horizontal: 25.0),
         child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              const SizedBox(
+                height: 25.0,
+              ),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -80,13 +117,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               const SizedBox(
                 height: 30.0,
               ),
-              Text(_scanBarcode == '' ? '' : 'Rex Jimenez',
+              Text(
+                  _scanBarcode == ''
+                      ? ''
+                      : '${personnelData['first_name']} ${personnelData['last_name']}',
                   maxLines: 2,
                   style: TextStyle(
                       fontSize: 30,
                       fontWeight: FontWeight.w600,
                       color: Colors.grey[800])),
-              Text(_scanBarcode == '' ? '' : 'PS/Sgt.',
+              Text(_scanBarcode == '' ? '' : '${personnelData['position']}',
                   maxLines: 2,
                   style: TextStyle(fontSize: 20, color: Colors.grey[800])),
               const SizedBox(
@@ -208,6 +248,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         fontWeight: FontWeight.w600),
                   ),
                 ),
+              ),
+              const SizedBox(
+                height: 25.0,
               ),
             ],
           ),
