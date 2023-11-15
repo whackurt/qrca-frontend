@@ -28,6 +28,8 @@ class Toast {
 
   void showErrorToast({required context, required String? message}) {
     MotionToast.error(
+      width: MediaQuery.of(context).size.width * .90,
+      height: 70.0,
       title: const Text(
         'Error',
         style: TextStyle(
@@ -37,8 +39,6 @@ class Toast {
       description: Text('$message'),
       position: MotionToastPosition.top,
       barrierColor: Colors.black.withOpacity(0.3),
-      width: 300,
-      height: 80,
       dismissable: false,
     ).show(context);
   }
