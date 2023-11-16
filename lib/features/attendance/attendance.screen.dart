@@ -29,6 +29,39 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   Map data = {};
   Map personnelData = {};
 
+  Future<void> saveAttendance() async {
+    await attendanceController
+        .createAttendance(Attendance(qrCode: _scanBarcode))
+        .then((res) {
+      if (res['success']) {
+        setState(() {
+          data = res['data'];
+        });
+      } else {
+        Toast().showErrorToast(
+            context: context, message: 'Failed to record attendance.');
+      }
+    });
+  }
+
+  Future<void> getPersonnel() async {
+    await personnelController
+        .getPersonnelById(id: data['personnel'])
+        .then((res) {
+      if (res['success']) {
+        setState(() {
+          personnelData = res['data'];
+        });
+
+        Toast().showSuccessToast(
+            context: context, message: 'Attendance recorded successfully.');
+      } else {
+        Toast().showErrorToast(
+            context: context, message: 'Failed to fetch personnel data.');
+      }
+    });
+  }
+
   Future<void> scanQR() async {
     String barcodeScanRes;
 
@@ -50,32 +83,15 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       _scanBarcode = barcodeScanRes;
     });
 
-    await attendanceController
-        .createAttendance(Attendance(qrCode: _scanBarcode))
-        .then((res) {
-      if (res['success']) {
-        setState(() {
-          data = res['data'];
-        });
-        Toast().showSuccessToast(
-            context: context, message: 'Attendance recorded successfully.');
-      } else {
-        Toast().showErrorToast(
-            context: context, message: 'Failed to record attendance.');
-      }
+    setState(() {
+      loading = true;
     });
 
-    await personnelController
-        .getPersonnelById(id: data['personnel'])
-        .then((res) {
-      if (res['success']) {
-        setState(() {
-          personnelData = res['data'];
-        });
-      } else {
-        Toast().showErrorToast(
-            context: context, message: 'Failed to fetch personnel data.');
-      }
+    await saveAttendance();
+    await getPersonnel();
+
+    setState(() {
+      loading = false;
     });
   }
 
@@ -117,50 +133,67 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               const SizedBox(
                 height: 30.0,
               ),
-              Text(
-                  _scanBarcode == ''
-                      ? ''
-                      : '${personnelData['first_name']} ${personnelData['last_name']}',
-                  maxLines: 2,
-                  style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[800])),
-              Text(_scanBarcode == '' ? '' : '${personnelData['position']}',
-                  maxLines: 2,
-                  style: TextStyle(fontSize: 20, color: Colors.grey[800])),
-              const SizedBox(
-                height: 30.0,
-              ),
+              loading
+                  ? const Text('')
+                  : Column(
+                      children: [
+                        Text(
+                            _scanBarcode == ''
+                                ? ''
+                                : '${personnelData['first_name']} ${personnelData['last_name']}',
+                            maxLines: 2,
+                            style: TextStyle(
+                                fontSize: 30,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[800])),
+                        Text(
+                            _scanBarcode == ''
+                                ? ''
+                                : '${personnelData['position']}',
+                            maxLines: 2,
+                            style: TextStyle(
+                                fontSize: 20, color: Colors.grey[800])),
+                        const SizedBox(
+                          height: 30.0,
+                        ),
+                      ],
+                    ),
               Container(
                 padding: const EdgeInsets.all(20.0),
                 height: 270.0,
                 width: MediaQuery.of(context).size.width * .60,
                 decoration: BoxDecoration(color: Colors.grey[200]),
-                child: Column(
-                  children: [
-                    Text(_scanBarcode == '' ? '' : _scanBarcode,
-                        style: TextStyle(
-                            fontSize: 25,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors().mainRed)),
-                    _scanBarcode == ''
-                        ? const Text('')
-                        : QrImageView(
-                            data: _scanBarcode,
-                            version: QrVersions.auto,
-                            size: 200,
-                            errorStateBuilder: (ctx, err) {
-                              return const Center(
-                                child: Text(
-                                  'Something went wrong!!!',
-                                  textAlign: TextAlign.center,
+                child: loading
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 15.0),
+                        child: SpinKitDualRing(
+                          color: AppColors().mainRed,
+                          size: 30.0,
+                        ))
+                    : Column(
+                        children: [
+                          Text(_scanBarcode == '' ? '' : _scanBarcode,
+                              style: TextStyle(
+                                  fontSize: 25,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors().mainRed)),
+                          _scanBarcode == ''
+                              ? const Text('')
+                              : QrImageView(
+                                  data: _scanBarcode,
+                                  version: QrVersions.auto,
+                                  size: 200,
+                                  errorStateBuilder: (ctx, err) {
+                                    return const Center(
+                                      child: Text(
+                                        'Something went wrong!!!',
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    );
+                                  },
                                 ),
-                              );
-                            },
-                          ),
-                  ],
-                ),
+                        ],
+                      ),
               ),
               const SizedBox(
                 height: 80.0,
