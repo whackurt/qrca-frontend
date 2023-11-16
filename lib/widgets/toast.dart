@@ -15,6 +15,7 @@ class Toast {
         '$message',
         style: const TextStyle(fontSize: 12),
       ),
+      borderRadius: 15.0,
       layoutOrientation: ToastOrientation.ltr,
       animationType: AnimationType.fromBottom,
       dismissable: true,
