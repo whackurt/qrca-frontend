@@ -10,14 +10,17 @@ class AttendanceController {
 
   Future createAttendance(Attendance attendance) async {
     SharedPreferences pref = await SharedPreferences.getInstance();
-
+    print(attendance);
     http.Response response = await http.post(
       Uri.parse('${api.baseUrl}/attendance'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
         'auth-token': pref.getString('token').toString()
       },
-      body: jsonEncode(<String, String>{"qr_code": attendance.qrCode}),
+      body: jsonEncode(<String, String>{
+        "qr_code": attendance.qrCode,
+        "dateTime": attendance.dateTime
+      }),
     );
 
     Map jsonRes = jsonDecode(response.body) as Map<String, dynamic>;

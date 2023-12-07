@@ -25,21 +25,25 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   String _scanBarcode = '';
   bool loading = false;
+  bool codeInvalid = false;
 
   Map data = {};
   Map personnelData = {};
 
   Future<void> saveAttendance() async {
     await attendanceController
-        .createAttendance(Attendance(qrCode: _scanBarcode))
+        .createAttendance(Attendance(
+            qrCode: _scanBarcode,
+            dateTime: DateTime.now().toIso8601String().toString()))
         .then((res) {
       if (res['success']) {
         setState(() {
           data = res['data'];
         });
       } else {
-        Toast().showErrorToast(
-            context: context, message: 'Failed to record attendance.');
+        setState(() {
+          codeInvalid = true;
+        });
       }
     });
   }
@@ -63,6 +67,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   }
 
   Future<void> scanQR() async {
+    setState(() {
+      codeInvalid = false;
+      personnelData = {};
+    });
     String barcodeScanRes;
 
     try {
@@ -88,7 +96,10 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     });
 
     await saveAttendance();
-    await getPersonnel();
+
+    if (!codeInvalid) {
+      await getPersonnel();
+    }
 
     setState(() {
       loading = false;
@@ -140,7 +151,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         Text(
                             _scanBarcode == ''
                                 ? ''
-                                : '${personnelData['first_name']} ${personnelData['last_name']}',
+                                : '${personnelData['first_name'] ?? ''} ${personnelData['last_name'] ?? ''}',
                             maxLines: 2,
                             style: TextStyle(
                                 fontSize: 30,
@@ -149,7 +160,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         Text(
                             _scanBarcode == ''
                                 ? ''
-                                : '${personnelData['position']}',
+                                : '${personnelData['position'] ?? ''}',
                             maxLines: 2,
                             style: TextStyle(
                                 fontSize: 20, color: Colors.grey[800])),
@@ -172,12 +183,12 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                         ))
                     : Column(
                         children: [
-                          Text(_scanBarcode == '' ? '' : _scanBarcode,
+                          Text(codeInvalid ? 'Invalid QR Code' : _scanBarcode,
                               style: TextStyle(
                                   fontSize: 25,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors().mainRed)),
-                          _scanBarcode == ''
+                          codeInvalid
                               ? const Text('')
                               : QrImageView(
                                   data: _scanBarcode,

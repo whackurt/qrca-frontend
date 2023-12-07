@@ -1,19 +1,16 @@
 class Attendance {
   String qrCode;
-
-  Attendance({
-    required this.qrCode,
-  });
+  String dateTime;
+  Attendance({required this.qrCode, required this.dateTime});
 
   factory Attendance.fromJson(Map<String, dynamic> json) {
     return Attendance(
       qrCode: json['qr_code'],
+      dateTime: json['dateTime'],
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'qr_code': qrCode,
-    };
+    return {'qr_code': qrCode, 'dateTime': dateTime};
   }
 }
